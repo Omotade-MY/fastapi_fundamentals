@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
-from carsharing import app
+from carsharing import router
 
-client = TestClient(app)
+client = TestClient(router)
 
 
 def test_get_cars():

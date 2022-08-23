@@ -2,7 +2,7 @@ from fastapi import HTTPException, Depends, APIRouter
 from routers.auth import get_current_user
 from schemas import CarOutput, TripInput, CarInput, Car, Trip, User
 from sqlmodel import Session, select
-from db import get_session
+from db import engine, get_session
 
 
 router = APIRouter(prefix="/api/cars")

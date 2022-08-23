@@ -3,13 +3,12 @@ import uvicorn
 from sqlmodel import SQLModel
 from db import engine
 
-from routers import cars, web, auth
+from routers import cars, web
 
 app = FastAPI()
 
 app.include_router(cars.router)
 app.include_router(web.router)
-app.include_router(auth.router)
 
 
 @app.on_event("startup")

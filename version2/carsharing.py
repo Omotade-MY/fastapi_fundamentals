@@ -1,13 +1,26 @@
-from fastapi import HTTPException, Depends, APIRouter
-from routers.auth import get_current_user
-from schemas import CarOutput, TripInput, CarInput, Car, Trip, User
-from sqlmodel import Session, select
-from db import get_session
+from fastapi import FastAPI, HTTPException, Depends
+import uvicorn
+from schemas import CarOutput, TripInput, TripOutput, CarInput, Car, Trip
+from sqlmodel import create_engine, Session, SQLModel, select
 
 
-router = APIRouter(prefix="/api/cars")
+app = FastAPI()
 
-@router.get("/")
+engine = create_engine(
+    "sqlite:///carsharing.db",
+    connect_args= {"check_same_thread":False},
+    echo= True
+)
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+@app.on_event("startup")
+def on_startup():
+    SQLModel.metadata.create_all(engine)
+
+
+@app.get("/api/cars")
 def get_cars(size: str|None = None, doors: int|None = None, session: Session = Depends(get_session)) -> list:
     
     query = select(Car)
@@ -19,7 +32,7 @@ def get_cars(size: str|None = None, doors: int|None = None, session: Session = D
     result = session.exec(query).all()
     return result 
 
-@router.get("/{id}", response_model=CarOutput)
+@app.get("/api/cars/{id}", response_model=CarOutput)
 def get_cars_id(id:int, session: Session = Depends(get_session)) -> dict:
     car = session.get(Car, id)
     if car:
@@ -27,9 +40,8 @@ def get_cars_id(id:int, session: Session = Depends(get_session)) -> dict:
     else:
         raise HTTPException(status_code=404, detail=f"No such car with id {id}")
     
-@router.post("/", response_model=Car)
-def add_car(car_input: CarInput, session: Session = Depends(get_session),
-                        user: User = Depends(get_current_user)) -> Car:
+@app.post("/api/cars", response_model=Car)
+def add_car(car_input: CarInput, session: Session = Depends(get_session)) -> CarOutput:
      
     new_car = Car.from_orm(car_input)
     session.add(new_car)
@@ -38,7 +50,7 @@ def add_car(car_input: CarInput, session: Session = Depends(get_session),
     return new_car
 
 
-@router.delete("/{id}", status_code= 200)
+@app.delete("/api/cars/{id}", status_code= 200)
 def remove_car(id: int, session: Session = Depends(get_session)):
     car = session.get(Car, id)
     if car:
@@ -49,7 +61,7 @@ def remove_car(id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail=f"No such car with id {id}")
 
 
-@router.put("/{id}", response_model=CarOutput)
+@app.put("/api/cars/{id}", response_model=CarOutput)
 def change_car(id: int, car_input: CarInput, session: Session = Depends(get_session)) -> Car:
     car = session.get(Car, id)
     if car:
@@ -66,7 +78,7 @@ def change_car(id: int, car_input: CarInput, session: Session = Depends(get_sess
     else:
         raise HTTPException(status_code=404, detail=f"No such car with id {id}")
 
-@router.post("/{id}/trips", response_model=TripInput)
+@app.post("/api/cars/{id}/trips", response_model=TripInput)
 def add_trip(car_id: int, trip_input: TripInput, session: Session = Depends(get_session)) -> Trip:
     car = session.get(Car, car_id)
     if car:
@@ -83,3 +95,9 @@ def add_trip(car_id: int, trip_input: TripInput, session: Session = Depends(get_
 
     else:
         raise HTTPException(status_code=404, detail=f"No such car with id {id}")
+
+    
+        
+
+if __name__ == '__main__':
+    uvicorn.run("carsharing:app", reload=True)

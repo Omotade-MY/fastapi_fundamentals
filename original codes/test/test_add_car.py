@@ -1,11 +1,11 @@
 from unittest.mock import Mock
 from fastapi.testclient import TestClient
 
-from carsharing import app
+from carsharing import router
 from routers.cars import add_car
-from schemas import CarInput, User, Car
+from schemas import CarInput, User, CarInput
 
-client = TestClient(app)
+client = TestClient(router)
 
 
 def test_add_car():
@@ -30,6 +30,6 @@ def test_add_car_with_mock_session():
     mock_session.add.assert_called_once()
     mock_session.commit.assert_called_once()
     mock_session.refresh.assert_called_once()
-    assert isinstance(result, Car)
+    assert isinstance(result, CarInput)
     assert result.doors == 2
     assert result.size == "xl"
